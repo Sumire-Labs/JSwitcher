@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 type Switcher struct {
@@ -23,6 +25,12 @@ func (s *Switcher) SetJavaHome(javaHome string) error {
 
 	// Set environment variable for current session
 	err := os.Setenv("JAVA_HOME", javaHome)
+	if err != nil {
+		return err
+	}
+
+	// Update PATH to include new Java bin directory
+	err = s.updatePath(javaHome)
 	if err != nil {
 		return err
 	}
@@ -69,9 +77,19 @@ func (s *Switcher) setWindowsPersistent(javaHome string) error {
 		}
 	}
 
-	// 変更を即座に反映
-	cmd = exec.Command("powershell", "-Command",
-		"[Environment]::SetEnvironmentVariable('JAVA_HOME', '"+javaHome+"', 'User')")
+	// PATH環境変数も更新
+	javaBinPath := filepath.Join(javaHome, "bin")
+
+	// PowerShellでPATH更新
+	pathUpdateScript := fmt.Sprintf(`
+		$currentPath = [Environment]::GetEnvironmentVariable('PATH', 'User')
+		$pathParts = $currentPath -split ';' | Where-Object { $_ -notlike '*java*' }
+		$newPath = '%s;' + ($pathParts -join ';')
+		[Environment]::SetEnvironmentVariable('PATH', $newPath, 'User')
+		[Environment]::SetEnvironmentVariable('JAVA_HOME', '%s', 'User')
+	`, javaBinPath, javaHome)
+
+	cmd = exec.Command("powershell", "-Command", pathUpdateScript)
 	return cmd.Run()
 }
 
@@ -99,25 +117,78 @@ func (s *Switcher) setUnixPersistent(javaHome string) error {
 		targetFile = fmt.Sprintf("%s/.bashrc", homeDir)
 	}
 
-	// 既存のJAVA_HOME設定を削除
+	// 既存のJAVA_HOME関連設定を削除
 	cmd := exec.Command("sed", "-i", "/export JAVA_HOME=/d", targetFile)
 	cmd.Run() // エラーは無視（ファイルが存在しない場合など）
 
+	// 既存のJava PATH設定を削除（簡易版）
+	cmd = exec.Command("sed", "-i", "/# JavaSwitcher PATH/d", targetFile)
+	cmd.Run()
+
 	// 新しいJAVA_HOME設定を追加
-	exportLine := fmt.Sprintf("export JAVA_HOME=%s", javaHome)
-	cmd = exec.Command("sh", "-c", fmt.Sprintf("echo '%s' >> %s", exportLine, targetFile))
+	exportLines := fmt.Sprintf(`export JAVA_HOME=%s
+export PATH=$JAVA_HOME/bin:$PATH  # JavaSwitcher PATH`, javaHome)
+
+	cmd = exec.Command("sh", "-c", fmt.Sprintf("echo '%s' >> %s", exportLines, targetFile))
 
 	return cmd.Run()
 }
 
+// PATH環境変数の更新
+func (s *Switcher) updatePath(javaHome string) error {
+	javaBinPath := filepath.Join(javaHome, "bin")
+
+	// 現在のPATHを取得
+	currentPath := os.Getenv("PATH")
+
+	// Javaのbinパスが既に含まれているかチェック
+	if strings.Contains(currentPath, javaBinPath) {
+		return nil // 既に含まれている
+	}
+
+	// プラットフォーム別のPATH区切り文字
+	pathSeparator := ":"
+	if runtime.GOOS == "windows" {
+		pathSeparator = ";"
+	}
+
+	// 他のJavaパスを削除
+	pathParts := strings.Split(currentPath, pathSeparator)
+	cleanedParts := []string{}
+
+	for _, part := range pathParts {
+		// Javaのbinディレクトリでない場合のみ追加
+		if !s.isJavaBinPath(part) {
+			cleanedParts = append(cleanedParts, part)
+		}
+	}
+
+	// 新しいJavaのbinパスを先頭に追加
+	newPath := javaBinPath + pathSeparator + strings.Join(cleanedParts, pathSeparator)
+
+	// 現在のセッションで設定
+	return os.Setenv("PATH", newPath)
+}
+
+// Javaのbinパスかどうかを判定
+func (s *Switcher) isJavaBinPath(path string) bool {
+	path = strings.ToLower(path)
+	return strings.Contains(path, "java") &&
+		   (strings.Contains(path, "bin") || strings.Contains(path, "javapath"))
+}
+
 // PowerShellスクリプト生成（Windows向け追加オプション）
 func (s *Switcher) GenerateWindowsScript(javaHome string) (string, error) {
+	javaBinPath := filepath.Join(javaHome, "bin")
 	script := fmt.Sprintf(`# JavaSwitcher Auto-generated Script
 $env:JAVA_HOME = "%s"
+$env:PATH = "%s;" + ($env:PATH -split ";" | Where-Object { $_ -notlike "*java*" } | Join-String -Separator ";")
+
 [Environment]::SetEnvironmentVariable("JAVA_HOME", "%s", "User")
 Write-Host "JAVA_HOME set to: %s"
+Write-Host "PATH updated to prioritize: %s"
 Write-Host "Please restart your terminal to apply changes globally."
-`, javaHome, javaHome, javaHome)
+`, javaHome, javaBinPath, javaHome, javaHome, javaBinPath)
 
 	return script, nil
 }
