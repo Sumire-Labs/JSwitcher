@@ -29,6 +29,10 @@ type JavaSetMsg struct {
 	Err      error
 }
 
+type JavaRestoreMsg struct {
+	Err error
+}
+
 func NewModel() Model {
 	return Model{
 		javaInstalls: []java.Installation{},
@@ -67,6 +71,13 @@ func (m Model) setJavaHome(javaHome string) tea.Cmd {
 	}
 }
 
+func (m Model) restorePreviousJavaHome() tea.Cmd {
+	return func() tea.Msg {
+		err := m.switcher.RestorePrevious()
+		return JavaRestoreMsg{Err: err}
+	}
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -86,6 +97,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				selected := m.javaInstalls[m.cursor]
 				return m, m.setJavaHome(selected.Home)
 			}
+		case "r", "R":
+			// 前のJAVA_HOMEに復元
+			return m, m.restorePreviousJavaHome()
 		}
 
 	// Mouse events disabled to prevent interference with CMD scrolling
@@ -103,6 +117,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			for i := range m.javaInstalls {
 				m.javaInstalls[i].Current = m.javaInstalls[i].Home == msg.JavaHome
 			}
+		}
+
+	case JavaRestoreMsg:
+		if msg.Err != nil {
+			m.err = msg.Err
+		} else {
+			// Refresh installations to update current status
+			return m, m.detectJavaInstallations
 		}
 	}
 
@@ -183,7 +205,7 @@ func (m Model) View() string {
 	}
 
 	s += "\n"
-	s += m.styles.Header.Render("💡 ↑/↓キーで移動、Enterで選択、'q'で終了")
+	s += m.styles.Header.Render("💡 ↑/↓キーで移動、Enterで選択、'r'で復元、'q'で終了")
 
 	return s
 }
