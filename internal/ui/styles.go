@@ -33,8 +33,6 @@ func NewStyles() Styles {
 	// 新しいバッジ用カラー
 	softGreen := lipgloss.Color("#98FB98")   // 薄い緑色（目に優しい）
 	darkGreen := lipgloss.Color("#228B22")  // 濃い緑色（テキスト用）
-	softBlue := lipgloss.Color("#E0F6FF")   // 薄い青色
-	darkBlue := lipgloss.Color("#0066CC")   // 濃い青色
 
 	return Styles{
 		Title: lipgloss.NewStyle().
