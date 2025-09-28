@@ -323,7 +323,7 @@ func (m Model) renderCompactView() string {
 			// バージョンにバッジを追加
 			version := install.Version
 			if install.Current {
-				version += " " + m.styles.Badge.Render("ACTIVE")
+				version += " " + m.styles.Badge.Render("● ACTIVE")
 			}
 
 			line := fmt.Sprintf("%s %s", cursor, version)

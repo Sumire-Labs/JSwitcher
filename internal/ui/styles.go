@@ -14,6 +14,7 @@ type Styles struct {
 	Box        lipgloss.Style
 	Card       lipgloss.Style
 	Badge      lipgloss.Style
+	BadgeAlt   lipgloss.Style  // 代替バッジスタイル
 	Accent     lipgloss.Style
 	Muted      lipgloss.Style
 	Border     lipgloss.Style
@@ -28,6 +29,12 @@ func NewStyles() Styles {
 	neutralGray := lipgloss.Color("#8A8A8A")
 	darkGray := lipgloss.Color("#404040")
 	lightGray := lipgloss.Color("#D3D3D3")
+
+	// 新しいバッジ用カラー
+	softGreen := lipgloss.Color("#98FB98")   // 薄い緑色（目に優しい）
+	darkGreen := lipgloss.Color("#228B22")  // 濃い緑色（テキスト用）
+	softBlue := lipgloss.Color("#E0F6FF")   // 薄い青色
+	darkBlue := lipgloss.Color("#0066CC")   // 濃い青色
 
 	return Styles{
 		Title: lipgloss.NewStyle().
@@ -74,10 +81,19 @@ func NewStyles() Styles {
 			Background(darkGray),
 
 		Badge: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(primaryBlue).
+			Foreground(darkGreen).
+			Background(softGreen).
+			Padding(0, 2).
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(darkGreen).
+			Bold(true).
+			Italic(false),
+
+		BadgeAlt: lipgloss.NewStyle().
+			Foreground(successGreen).
 			Padding(0, 1).
-			Bold(true),
+			Bold(true).
+			Italic(true),
 
 		Accent: lipgloss.NewStyle().
 			Foreground(warningOrange).
