@@ -378,13 +378,13 @@ func (m Model) renderDetailedView() string {
 	var s string
 
 	// タイトル
-	s += m.styles.Title.Render("🔄 JavaSwitcher v0.2.1") + "\n"
+	s += m.styles.Title.Render("🔄 JavaSwitcher v0.2.4") + "\n"
 	s += m.styles.Header.Render("高速Java環境切り替えツール") + "\n"
 
 	// クレジット情報（iキーで切り替え）
 	if m.showCredits {
 		creditBox := m.styles.Box.Render(
-			"📦 バージョン: v0.2.1\n" +
+			"📦 バージョン: v0.2.4\n" +
 				"🎯 作者: s12kuma01\n" +
 				"📚 ライセンス: OSL-3.0\n" +
 				"🌐 GitHub: https://github.com/Sumire-Labs/JSwitcher",
