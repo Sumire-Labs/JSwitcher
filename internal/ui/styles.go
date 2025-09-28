@@ -30,9 +30,6 @@ func NewStyles() Styles {
 	darkGray := lipgloss.Color("#404040")
 	lightGray := lipgloss.Color("#D3D3D3")
 
-	// 新しいバッジ用カラー
-	softGreen := lipgloss.Color("#98FB98")   // 薄い緑色（目に優しい）
-	darkGreen := lipgloss.Color("#228B22")  // 濃い緑色（テキスト用）
 
 	return Styles{
 		Title: lipgloss.NewStyle().
@@ -79,13 +76,8 @@ func NewStyles() Styles {
 			Background(darkGray),
 
 		Badge: lipgloss.NewStyle().
-			Foreground(darkGreen).
-			Background(softGreen).
-			Padding(0, 2).
-			Border(lipgloss.NormalBorder()).
-			BorderForeground(darkGreen).
-			Bold(true).
-			Italic(false),
+			Foreground(successGreen).
+			Bold(true),
 
 		BadgeAlt: lipgloss.NewStyle().
 			Foreground(successGreen).
