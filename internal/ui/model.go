@@ -7,7 +7,9 @@ import (
 
 	"javaswitcher/internal/java"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type Model struct {
@@ -29,6 +31,9 @@ type Model struct {
 	history       []string
 	compactMode   bool
 	showCredits   bool
+
+	// Loading animation
+	spinner       spinner.Model
 }
 
 type JavaDetectedMsg struct {
@@ -45,6 +50,11 @@ type JavaRestoreMsg struct {
 }
 
 func NewModel() Model {
+	// スピナーを設定
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#00D7FF"))
+
 	return Model{
 		javaInstalls:     []java.Installation{},
 		filteredInstalls: []java.Installation{},
@@ -60,6 +70,7 @@ func NewModel() Model {
 		history:          []string{},
 		compactMode:      true,  // デフォルトでコンパクトモード
 		showCredits:      false, // デフォルトでクレジット非表示
+		spinner:          s,
 	}
 }
 
@@ -67,6 +78,7 @@ func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.detectJavaInstallations,
 		tea.EnterAltScreen,
+		m.spinner.Tick,
 		// Mouse support enabled by default in modern bubbletea
 	)
 }
@@ -136,6 +148,11 @@ func (m *Model) getCurrentJava() *java.Installation {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	// スピナーを更新
+	m.spinner, cmd = m.spinner.Update(msg)
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		// フィルターモード時のキー処理
@@ -233,7 +250,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	return m, nil
+	return m, cmd
 }
 
 func (m Model) View() string {
@@ -290,7 +307,7 @@ func (m Model) renderCompactView() string {
 
 	// Java一覧
 	if m.loading {
-		s += m.styles.Muted.Render("🔍 Javaインストールを検出中...") + "\n"
+		s += m.spinner.View() + " " + m.styles.Muted.Render("Javaインストールを検出中...") + "\n"
 		return s
 	}
 
@@ -382,7 +399,7 @@ func (m Model) renderDetailedView() string {
 	}
 
 	if m.loading {
-		s += m.styles.Muted.Render("🔍 Javaインストールを検出中...") + "\n"
+		s += m.spinner.View() + " " + m.styles.Muted.Render("Javaインストールを検出中...") + "\n"
 		return s
 	}
 
