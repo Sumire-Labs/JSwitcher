@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -59,53 +60,32 @@ func NewDetector() *Detector {
 func (d *Detector) DetectInstallations() ([]Installation, error) {
 	var installations []Installation
 
-	// Check PATH for java executable
-	if javaPath, err := exec.LookPath("java"); err == nil {
-		if javaHome := d.extractJavaHomeFromExe(javaPath); javaHome != "" {
-			version := d.getJavaVersion(javaHome)
-			installations = append(installations, Installation{
-				Version: version,
-				Path:    javaPath,
-				Home:    javaHome,
-				Current: javaHome == d.currentHome,
-			})
-		}
+	// 1. Windows Registry detection (highest priority)
+	if runtime.GOOS == "windows" {
+		registryInstalls := d.detectFromRegistry()
+		installations = append(installations, registryInstalls...)
 	}
 
-	// Search common installation directories
-	for _, searchPath := range d.searchPaths {
-		if _, err := os.Stat(searchPath); os.IsNotExist(err) {
-			continue
-		}
-
-		filepath.Walk(searchPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return nil
-			}
-
-			// Look for directories that contain Java installations
-			if info.IsDir() && d.isJavaDirectory(info.Name()) {
-				javaExe := filepath.Join(path, "bin", d.javaExeName)
-				if _, err := os.Stat(javaExe); err == nil {
-					version := d.getJavaVersion(path)
-					if version != "" && version != "不明" {
-						// Check if already added
-						if !d.containsInstallation(installations, path) {
-							installations = append(installations, Installation{
-								Version: version,
-								Path:    javaExe,
-								Home:    path,
-								Current: path == d.currentHome,
-							})
-						}
-					}
-				}
-			}
-			return nil
-		})
+	// 2. SDKMAN detection (Unix systems)
+	if runtime.GOOS != "windows" {
+		sdkmanInstalls := d.detectFromSDKMAN()
+		installations = append(installations, sdkmanInstalls...)
 	}
 
-	// Sort installations
+	// 3. Package manager detection
+	pkgMgrInstalls := d.detectFromPackageManagers()
+	installations = append(installations, pkgMgrInstalls...)
+
+	// 4. PATH environment detection
+	pathInstalls := d.detectFromPATH()
+	installations = append(installations, pathInstalls...)
+
+	// 5. Traditional directory search (fallback)
+	dirInstalls := d.detectFromDirectories()
+	installations = append(installations, dirInstalls...)
+
+	// Remove duplicates and sort
+	installations = d.removeDuplicates(installations)
 	d.sortInstallations(installations)
 
 	return installations, nil
@@ -236,4 +216,282 @@ func formatJavaVersion(version string) string {
 	}
 
 	return "Java " + version
+}
+
+// Windows Registry detection
+func (d *Detector) detectFromRegistry() []Installation {
+	if runtime.GOOS != "windows" {
+		return []Installation{}
+	}
+
+	// Note: この関数は条件付きコンパイルで Windows でのみ利用可能
+	return d.detectFromWindowsRegistry()
+}
+
+// SDKMAN detection for Unix systems
+func (d *Detector) detectFromSDKMAN() []Installation {
+	var installations []Installation
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return installations
+	}
+
+	sdkmanDir := filepath.Join(homeDir, ".sdkman", "candidates", "java")
+	if _, err := os.Stat(sdkmanDir); os.IsNotExist(err) {
+		return installations
+	}
+
+	entries, err := os.ReadDir(sdkmanDir)
+	if err != nil {
+		return installations
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() && entry.Name() != "current" {
+			javaHome := filepath.Join(sdkmanDir, entry.Name())
+			if d.isValidJavaHome(javaHome) {
+				version := d.getJavaVersion(javaHome)
+				if version != "" && version != "不明" {
+					installations = append(installations, Installation{
+						Version: version + " (SDKMAN)",
+						Path:    filepath.Join(javaHome, "bin", d.javaExeName),
+						Home:    javaHome,
+						Current: javaHome == d.currentHome,
+					})
+				}
+			}
+		}
+	}
+
+	return installations
+}
+
+// Package manager detection
+func (d *Detector) detectFromPackageManagers() []Installation {
+	var installations []Installation
+
+	switch runtime.GOOS {
+	case "darwin":
+		// Homebrew detection
+		installations = append(installations, d.detectFromHomebrew()...)
+	case "linux":
+		// APT, YUM detection can be added here
+	case "windows":
+		// Chocolatey, Scoop detection
+		installations = append(installations, d.detectFromChocolatey()...)
+		installations = append(installations, d.detectFromScoop()...)
+	}
+
+	return installations
+}
+
+// Enhanced PATH detection
+func (d *Detector) detectFromPATH() []Installation {
+	var installations []Installation
+
+	// Find all java executables in PATH
+	javaExecutables := d.findAllJavaInPATH()
+
+	for _, javaPath := range javaExecutables {
+		if javaHome := d.extractJavaHomeFromExe(javaPath); javaHome != "" {
+			version := d.getJavaVersion(javaHome)
+			if version != "" && version != "不明" {
+				installations = append(installations, Installation{
+					Version: version + " (PATH)",
+					Path:    javaPath,
+					Home:    javaHome,
+					Current: javaHome == d.currentHome,
+				})
+			}
+		}
+	}
+
+	return installations
+}
+
+// Traditional directory search
+func (d *Detector) detectFromDirectories() []Installation {
+	var installations []Installation
+
+	// Original directory search logic
+	for _, searchPath := range d.searchPaths {
+		if _, err := os.Stat(searchPath); os.IsNotExist(err) {
+			continue
+		}
+
+		filepath.Walk(searchPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+
+			if info.IsDir() && d.isJavaDirectory(info.Name()) {
+				javaExe := filepath.Join(path, "bin", d.javaExeName)
+				if _, err := os.Stat(javaExe); err == nil {
+					version := d.getJavaVersion(path)
+					if version != "" && version != "不明" {
+						installations = append(installations, Installation{
+							Version: version + " (Directory)",
+							Path:    javaExe,
+							Home:    path,
+							Current: path == d.currentHome,
+						})
+					}
+				}
+			}
+			return nil
+		})
+	}
+
+	return installations
+}
+
+// Helper functions
+func (d *Detector) isValidJavaHome(javaHome string) bool {
+	javaExe := filepath.Join(javaHome, "bin", d.javaExeName)
+	_, err := os.Stat(javaExe)
+	return err == nil
+}
+
+func (d *Detector) findAllJavaInPATH() []string {
+	var javaExecutables []string
+
+	pathEnv := os.Getenv("PATH")
+	pathSeparator := ":"
+	if runtime.GOOS == "windows" {
+		pathSeparator = ";"
+	}
+
+	paths := strings.Split(pathEnv, pathSeparator)
+	for _, path := range paths {
+		javaPath := filepath.Join(path, d.javaExeName)
+		if _, err := os.Stat(javaPath); err == nil {
+			javaExecutables = append(javaExecutables, javaPath)
+		}
+	}
+
+	return javaExecutables
+}
+
+func (d *Detector) detectFromHomebrew() []Installation {
+	var installations []Installation
+
+	// Common Homebrew Java locations
+	brewPaths := []string{
+		"/opt/homebrew/opt",
+		"/usr/local/opt",
+	}
+
+	for _, brewPath := range brewPaths {
+		entries, err := os.ReadDir(brewPath)
+		if err != nil {
+			continue
+		}
+
+		for _, entry := range entries {
+			if entry.IsDir() && strings.Contains(strings.ToLower(entry.Name()), "openjdk") {
+				javaHome := filepath.Join(brewPath, entry.Name())
+				if d.isValidJavaHome(javaHome) {
+					version := d.getJavaVersion(javaHome)
+					if version != "" && version != "不明" {
+						installations = append(installations, Installation{
+							Version: version + " (Homebrew)",
+							Path:    filepath.Join(javaHome, "bin", d.javaExeName),
+							Home:    javaHome,
+							Current: javaHome == d.currentHome,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return installations
+}
+
+func (d *Detector) detectFromChocolatey() []Installation {
+	var installations []Installation
+
+	chocoPath := filepath.Join("C:", "ProgramData", "chocolatey", "lib")
+	if _, err := os.Stat(chocoPath); os.IsNotExist(err) {
+		return installations
+	}
+
+	entries, err := os.ReadDir(chocoPath)
+	if err != nil {
+		return installations
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() && (strings.Contains(strings.ToLower(entry.Name()), "openjdk") ||
+							  strings.Contains(strings.ToLower(entry.Name()), "adoptopenjdk")) {
+			javaHome := filepath.Join(chocoPath, entry.Name(), "tools")
+			if d.isValidJavaHome(javaHome) {
+				version := d.getJavaVersion(javaHome)
+				if version != "" && version != "不明" {
+					installations = append(installations, Installation{
+						Version: version + " (Chocolatey)",
+						Path:    filepath.Join(javaHome, "bin", d.javaExeName),
+						Home:    javaHome,
+						Current: javaHome == d.currentHome,
+					})
+				}
+			}
+		}
+	}
+
+	return installations
+}
+
+func (d *Detector) detectFromScoop() []Installation {
+	var installations []Installation
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return installations
+	}
+
+	scoopPath := filepath.Join(homeDir, "scoop", "apps")
+	if _, err := os.Stat(scoopPath); os.IsNotExist(err) {
+		return installations
+	}
+
+	entries, err := os.ReadDir(scoopPath)
+	if err != nil {
+		return installations
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() && (strings.Contains(strings.ToLower(entry.Name()), "openjdk") ||
+							  strings.Contains(strings.ToLower(entry.Name()), "adoptopenjdk")) {
+			appPath := filepath.Join(scoopPath, entry.Name(), "current")
+			if d.isValidJavaHome(appPath) {
+				version := d.getJavaVersion(appPath)
+				if version != "" && version != "不明" {
+					installations = append(installations, Installation{
+						Version: version + " (Scoop)",
+						Path:    filepath.Join(appPath, "bin", d.javaExeName),
+						Home:    appPath,
+						Current: appPath == d.currentHome,
+					})
+				}
+			}
+		}
+	}
+
+	return installations
+}
+
+func (d *Detector) removeDuplicates(installations []Installation) []Installation {
+	seen := make(map[string]bool)
+	var result []Installation
+
+	for _, installation := range installations {
+		if !seen[installation.Home] {
+			seen[installation.Home] = true
+			result = append(result, installation)
+		}
+	}
+
+	return result
 }
