@@ -1,5 +1,6 @@
 # JavaSwitcher
 
+⚠️ 開発にはClaude Codeを一部使用しています。
 **高速Java環境切り替えツール** - 複数のJavaインストール間を瞬時に切り替える美しいCLIツール
 
 [![Version](https://img.shields.io/badge/version-v0.2.2-blue.svg)](https://github.com/Sumire-Labs/JSwitcher)
