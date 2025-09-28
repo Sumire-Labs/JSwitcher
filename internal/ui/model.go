@@ -25,15 +25,15 @@ type Model struct {
 	styles           Styles
 
 	// UX improvements
-	showPreview   bool
-	filterText    string
-	filterMode    bool
-	history       []string
-	compactMode   bool
-	showCredits   bool
+	showPreview bool
+	filterText  string
+	filterMode  bool
+	history     []string
+	compactMode bool
+	showCredits bool
 
 	// Loading animation
-	spinner       spinner.Model
+	spinner spinner.Model
 }
 
 type JavaDetectedMsg struct {
@@ -265,7 +265,7 @@ func (m Model) renderCompactView() string {
 	var s string
 
 	// ヘッダー
-	header := fmt.Sprintf("🔄 JavaSwitcher v0.2.3")
+	header := fmt.Sprintf("🔄 JavaSwitcher v0.2.5")
 	if m.loading {
 		header += " " + m.styles.Muted.Render("(検出中...)")
 	}
@@ -282,8 +282,8 @@ func (m Model) renderCompactView() string {
 	if currentJava != nil {
 		currentCard := m.styles.Box.Render(
 			m.styles.Current.Render("📍 現在アクティブ") + "\n" +
-			fmt.Sprintf("🏷️  %s", currentJava.Version) + "\n" +
-			m.styles.Muted.Render(fmt.Sprintf("📁 %s", currentJava.Home)),
+				fmt.Sprintf("🏷️  %s", currentJava.Version) + "\n" +
+				m.styles.Muted.Render(fmt.Sprintf("📁 %s", currentJava.Home)),
 		)
 		s += currentCard + "\n"
 	}
@@ -292,15 +292,15 @@ func (m Model) renderCompactView() string {
 	if m.filterMode {
 		filterBox := m.styles.Card.Render(
 			m.styles.Accent.Render("🔍 フィルター: ") +
-			m.styles.Selected.Render(m.filterText + "█") +
-			m.styles.Muted.Render(" (Escでキャンセル)"),
+				m.styles.Selected.Render(m.filterText+"█") +
+				m.styles.Muted.Render(" (Escでキャンセル)"),
 		)
 		s += filterBox + "\n"
 	} else if m.filterText != "" {
 		filterBox := m.styles.Box.Render(
 			m.styles.Accent.Render("🔍 フィルター: ") +
-			m.filterText +
-			m.styles.Muted.Render(fmt.Sprintf(" (%d件)", len(m.filteredInstalls))),
+				m.filterText +
+				m.styles.Muted.Render(fmt.Sprintf(" (%d件)", len(m.filteredInstalls))),
 		)
 		s += filterBox + "\n"
 	}
@@ -385,9 +385,9 @@ func (m Model) renderDetailedView() string {
 	if m.showCredits {
 		creditBox := m.styles.Box.Render(
 			"📦 バージョン: v0.2.1\n" +
-			"🎯 作者: s12kuma01\n" +
-			"📚 ライセンス: OSL-3.0\n" +
-			"🌐 GitHub: https://github.com/Sumire-Labs/JSwitcher",
+				"🎯 作者: s12kuma01\n" +
+				"📚 ライセンス: OSL-3.0\n" +
+				"🌐 GitHub: https://github.com/Sumire-Labs/JSwitcher",
 		)
 		s += creditBox + "\n"
 	}
