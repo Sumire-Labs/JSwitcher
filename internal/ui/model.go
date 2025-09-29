@@ -265,7 +265,7 @@ func (m Model) renderCompactView() string {
 	var s string
 
 	// ヘッダー
-	header := fmt.Sprintf("🔄 JavaSwitcher v0.2.4")
+	header := fmt.Sprintf("🔄 JavaSwitcher v0.2.5")
 	if m.loading {
 		header += " " + m.styles.Muted.Render("(検出中...)")
 	}
@@ -384,7 +384,7 @@ func (m Model) renderDetailedView() string {
 	// クレジット情報（iキーで切り替え）
 	if m.showCredits {
 		creditBox := m.styles.Box.Render(
-			"📦 バージョン: v0.2.4\n" +
+			"📦 バージョン: v0.2.5\n" +
 				"🎯 作者: s12kuma01\n" +
 				"📚 ライセンス: OSL-3.0\n" +
 				"🌐 GitHub: https://github.com/Sumire-Labs/JSwitcher",
@@ -403,7 +403,7 @@ func (m Model) renderDetailedView() string {
 		return s
 	}
 
-	// 残りの詳細表示ロジック...
+	// 残りの詳細表示ロジック
 	// （省略して後で実装）
 
 	return s + m.styles.Border.Render("💡 c:コンパクト | その他の操作...")
