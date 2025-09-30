@@ -172,12 +172,21 @@ func (s *Switcher) setUnixPersistent(javaHome string) error {
 	}
 
 	// 新しいJAVA_HOME設定を追加
-	exportLines := fmt.Sprintf(`export JAVA_HOME=%s
-export PATH=$JAVA_HOME/bin:$PATH  # JavaSwitcher PATH`, javaHome)
+	// コマンドインジェクション対策：ファイル書き込みを安全に行う
+	exportLines := fmt.Sprintf("export JAVA_HOME=%s\nexport PATH=$JAVA_HOME/bin:$PATH  # JavaSwitcher PATH\n", javaHome)
 
-	cmd = exec.Command("sh", "-c", fmt.Sprintf("echo '%s' >> %s", exportLines, targetFile))
+	// os.WriteFileを使用して安全にファイルに追記
+	f, err := os.OpenFile(targetFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("設定ファイルのオープンに失敗: %v", err)
+	}
+	defer f.Close()
 
-	return cmd.Run()
+	if _, err := f.WriteString(exportLines); err != nil {
+		return fmt.Errorf("設定ファイルへの書き込みに失敗: %v", err)
+	}
+
+	return nil
 }
 
 // PATH環境変数の更新
