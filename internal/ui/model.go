@@ -121,9 +121,11 @@ func (m *Model) applyFilter() {
 		}
 	}
 
-	// Reset cursor if out of bounds
-	if m.cursor >= len(m.filteredInstalls) {
+	// Reset cursor if out of bounds or list is empty
+	if len(m.filteredInstalls) == 0 {
 		m.cursor = 0
+	} else if m.cursor >= len(m.filteredInstalls) {
+		m.cursor = len(m.filteredInstalls) - 1 // 最後の要素に設定
 	}
 }
 
@@ -200,7 +202,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.filterText != "" {
 				activeList = m.filteredInstalls
 			}
-			if len(activeList) > 0 {
+			if len(activeList) > 0 && m.cursor < len(activeList) {
 				selected := activeList[m.cursor]
 				m.addToHistory(selected.Home)
 				return m, m.setJavaHome(selected.Home)
