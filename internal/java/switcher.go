@@ -178,11 +178,46 @@ func (s *Switcher) updatePath(javaHome string) error {
 	return os.Setenv("PATH", newPath)
 }
 
-// Javaのbinパスかどうかを判定
+// Javaのbinパスかどうかを判定（より厳密なチェック）
 func (s *Switcher) isJavaBinPath(path string) bool {
-	path = strings.ToLower(path)
-	return strings.Contains(path, "java") &&
-		   (strings.Contains(path, "bin") || strings.Contains(path, "javapath"))
+	if path == "" {
+		return false
+	}
+
+	lowerPath := strings.ToLower(path)
+
+	// 明示的なJavaディレクトリパターン
+	javaPatterns := []string{
+		"/jdk",
+		"/jre",
+		"/java-",
+		"\\jdk",
+		"\\jre",
+		"\\java-",
+		"/corretto",
+		"\\corretto",
+		"/zulu",
+		"\\zulu",
+		"/adoptium",
+		"\\adoptium",
+		"/openjdk",
+		"\\openjdk",
+		"/graalvm",
+		"\\graalvm",
+		"javapath", // Windowsの特殊パス
+	}
+
+	// いずれかのパターンにマッチし、かつbinディレクトリを含むか確認
+	hasJavaPattern := false
+	for _, pattern := range javaPatterns {
+		if strings.Contains(lowerPath, pattern) {
+			hasJavaPattern = true
+			break
+		}
+	}
+
+	// Javaパターンがあり、binディレクトリまたはjavapathである
+	return hasJavaPattern && (strings.Contains(lowerPath, "bin") || strings.Contains(lowerPath, "javapath"))
 }
 
 // PowerShellスクリプト生成（Windows向け追加オプション）
