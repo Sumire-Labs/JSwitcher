@@ -483,15 +483,43 @@ func (d *Detector) detectFromScoop() []Installation {
 }
 
 func (d *Detector) removeDuplicates(installations []Installation) []Installation {
-	seen := make(map[string]bool)
+	seen := make(map[string]*Installation)
 	var result []Installation
 
 	for _, installation := range installations {
-		if !seen[installation.Home] {
-			seen[installation.Home] = true
-			result = append(result, installation)
+		normalizedHome := d.normalizePath(installation.Home)
+
+		if existing, found := seen[normalizedHome]; !found {
+			// 初めて見るパス：そのまま追加
+			inst := installation
+			seen[normalizedHome] = &inst
+			result = append(result, inst)
+		} else {
+			// 重複パス：Currentフラグが立っている方を優先
+			if installation.Current && !existing.Current {
+				// 新しい方がCurrentなら置き換え
+				*existing = installation
+				// resultの中身も更新
+				for i := range result {
+					if d.normalizePath(result[i].Home) == normalizedHome {
+						result[i] = installation
+						break
+					}
+				}
+			}
 		}
 	}
 
 	return result
+}
+
+// パスを正規化（大文字小文字統一、スラッシュ統一）
+func (d *Detector) normalizePath(path string) string {
+	// バックスラッシュをスラッシュに統一
+	normalized := strings.ReplaceAll(path, "\\", "/")
+	// 小文字に統一（Windowsは大文字小文字を区別しない）
+	normalized = strings.ToLower(normalized)
+	// 末尾のスラッシュを削除
+	normalized = strings.TrimSuffix(normalized, "/")
+	return normalized
 }
