@@ -265,7 +265,7 @@ func (m Model) renderCompactView() string {
 	var s string
 
 	// ヘッダー
-	header := fmt.Sprintf("🔄 JavaSwitcher v0.2.5")
+	header := fmt.Sprintf("🔄 JavaSwitcher v0.2.6")
 	if m.loading {
 		header += " " + m.styles.Muted.Render("(検出中...)")
 	}
