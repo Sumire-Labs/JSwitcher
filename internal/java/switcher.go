@@ -10,18 +10,30 @@ import (
 )
 
 type Switcher struct {
-	previousJavaHome string
+	javaHomeHistory []string // 履歴スタック（最大2件保持）
 }
 
 func NewSwitcher() *Switcher {
+	currentJavaHome := os.Getenv("JAVA_HOME")
+	history := []string{}
+	if currentJavaHome != "" {
+		history = append(history, currentJavaHome)
+	}
 	return &Switcher{
-		previousJavaHome: os.Getenv("JAVA_HOME"),
+		javaHomeHistory: history,
 	}
 }
 
 func (s *Switcher) SetJavaHome(javaHome string) error {
-	// Store previous value for backup
-	s.previousJavaHome = os.Getenv("JAVA_HOME")
+	// 現在のJAVA_HOMEを履歴に追加（重複しない場合のみ）
+	currentJavaHome := os.Getenv("JAVA_HOME")
+	if currentJavaHome != "" && currentJavaHome != javaHome {
+		// 履歴の先頭に追加（最大2件まで保持）
+		s.javaHomeHistory = append([]string{currentJavaHome}, s.javaHomeHistory...)
+		if len(s.javaHomeHistory) > 2 {
+			s.javaHomeHistory = s.javaHomeHistory[:2]
+		}
+	}
 
 	// Set environment variable for current session
 	err := os.Setenv("JAVA_HOME", javaHome)
@@ -51,14 +63,40 @@ func (s *Switcher) GetCurrentJavaHome() string {
 }
 
 func (s *Switcher) GetPreviousJavaHome() string {
-	return s.previousJavaHome
+	if len(s.javaHomeHistory) > 0 {
+		return s.javaHomeHistory[0]
+	}
+	return ""
 }
 
 func (s *Switcher) RestorePrevious() error {
-	if s.previousJavaHome == "" {
+	if len(s.javaHomeHistory) == 0 {
 		return fmt.Errorf("復元可能な前のJAVA_HOMEがありません")
 	}
-	return s.SetJavaHome(s.previousJavaHome)
+
+	// 履歴から最新を取得して削除
+	previousJavaHome := s.javaHomeHistory[0]
+	s.javaHomeHistory = s.javaHomeHistory[1:]
+
+	// 履歴に追加しないように直接設定
+	err := os.Setenv("JAVA_HOME", previousJavaHome)
+	if err != nil {
+		return err
+	}
+
+	err = s.updatePath(previousJavaHome)
+	if err != nil {
+		return err
+	}
+
+	switch runtime.GOOS {
+	case "windows":
+		return s.setWindowsPersistent(previousJavaHome)
+	case "linux", "darwin":
+		return s.setUnixPersistent(previousJavaHome)
+	default:
+		return fmt.Errorf("プラットフォーム %s はサポートされていません", runtime.GOOS)
+	}
 }
 
 // Windows永続化: レジストリ経由
