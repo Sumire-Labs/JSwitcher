@@ -117,13 +117,21 @@ func (s *Switcher) setUnixPersistent(javaHome string) error {
 		targetFile = fmt.Sprintf("%s/.bashrc", homeDir)
 	}
 
-	// 既存のJAVA_HOME関連設定を削除
-	cmd := exec.Command("sed", "-i", "/export JAVA_HOME=/d", targetFile)
-	cmd.Run() // エラーは無視（ファイルが存在しない場合など）
-
-	// 既存のJava PATH設定を削除（簡易版）
-	cmd = exec.Command("sed", "-i", "/# JavaSwitcher PATH/d", targetFile)
-	cmd.Run()
+	// 既存のJAVA_HOME関連設定を削除（macOS/Linux互換）
+	var cmd *exec.Cmd
+	if runtime.GOOS == "darwin" {
+		// macOSはsed -i ''が必要
+		cmd = exec.Command("sed", "-i", "", "/export JAVA_HOME=/d", targetFile)
+		cmd.Run() // エラーは無視（ファイルが存在しない場合など）
+		cmd = exec.Command("sed", "-i", "", "/# JavaSwitcher PATH/d", targetFile)
+		cmd.Run()
+	} else {
+		// Linux/その他
+		cmd = exec.Command("sed", "-i", "/export JAVA_HOME=/d", targetFile)
+		cmd.Run()
+		cmd = exec.Command("sed", "-i", "/# JavaSwitcher PATH/d", targetFile)
+		cmd.Run()
+	}
 
 	// 新しいJAVA_HOME設定を追加
 	exportLines := fmt.Sprintf(`export JAVA_HOME=%s
