@@ -86,6 +86,10 @@ func (d *Detector) DetectInstallations() ([]Installation, error) {
 
 	// Remove duplicates and sort
 	installations = d.removeDuplicates(installations)
+
+	// 最終的なCurrentフラグの確定（JAVA_HOMEと完全一致するもの1つだけ）
+	installations = d.ensureSingleCurrent(installations)
+
 	d.sortInstallations(installations)
 
 	return installations, nil
@@ -522,4 +526,41 @@ func (d *Detector) normalizePath(path string) string {
 	// 末尾のスラッシュを削除
 	normalized = strings.TrimSuffix(normalized, "/")
 	return normalized
+}
+
+// 最終的なCurrentフラグを確定（JAVA_HOMEと一致する1つだけをCurrentにする）
+func (d *Detector) ensureSingleCurrent(installations []Installation) []Installation {
+	if d.currentHome == "" {
+		// JAVA_HOMEが設定されていない場合、全てCurrentをfalseに
+		for i := range installations {
+			installations[i].Current = false
+		}
+		return installations
+	}
+
+	normalizedCurrentHome := d.normalizePath(d.currentHome)
+	foundCurrent := false
+
+	// まず全てのCurrentフラグをfalseにリセット
+	for i := range installations {
+		installations[i].Current = false
+	}
+
+	// JAVA_HOMEと一致する最初の1つだけをCurrentにする
+	for i := range installations {
+		normalizedHome := d.normalizePath(installations[i].Home)
+		if normalizedHome == normalizedCurrentHome {
+			installations[i].Current = true
+			foundCurrent = true
+			break // 最初の1つだけ
+		}
+	}
+
+	// デバッグ用（オプション）
+	if !foundCurrent && d.currentHome != "" {
+		// JAVA_HOMEが設定されているのに一致するものがない場合
+		// これは正常な状態（検出されなかった別のJavaがJAVA_HOMEに設定されている）
+	}
+
+	return installations
 }
