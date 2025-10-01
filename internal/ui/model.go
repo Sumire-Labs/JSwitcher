@@ -177,7 +177,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// 通常モードのキー処理
 		switch msg.String() {
-		case "ctrl+c", "q", "esc":
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "esc":
+			// エラーがある場合はクリア、なければ終了
+			if m.err != nil {
+				m.err = nil
+				return m, nil
+			}
 			return m, tea.Quit
 		case "up", "k":
 			if m.cursor > 0 {
@@ -222,9 +229,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Err != nil {
 			m.err = msg.Err
 		} else {
-			// Update current status
+			// Update current status (正規化したパスで比較)
+			normalizedJavaHome := m.normalizePath(msg.JavaHome)
 			for i := range m.javaInstalls {
-				m.javaInstalls[i].Current = m.javaInstalls[i].Home == msg.JavaHome
+				m.javaInstalls[i].Current = m.normalizePath(m.javaInstalls[i].Home) == normalizedJavaHome
+			}
+			// filteredInstallsも同期
+			for i := range m.filteredInstalls {
+				m.filteredInstalls[i].Current = m.normalizePath(m.filteredInstalls[i].Home) == normalizedJavaHome
 			}
 		}
 
@@ -232,8 +244,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Err != nil {
 			m.err = msg.Err
 		} else {
-			// Refresh installations to update current status
-			return m, m.detectJavaInstallations
+			// Update current status directly (復元されたJAVA_HOMEを取得)
+			restoredJavaHome := m.switcher.GetCurrentJavaHome()
+			normalizedJavaHome := m.normalizePath(restoredJavaHome)
+			for i := range m.javaInstalls {
+				m.javaInstalls[i].Current = m.normalizePath(m.javaInstalls[i].Home) == normalizedJavaHome
+			}
+			// filteredInstallsも同期
+			for i := range m.filteredInstalls {
+				m.filteredInstalls[i].Current = m.normalizePath(m.filteredInstalls[i].Home) == normalizedJavaHome
+			}
 		}
 	}
 
@@ -262,6 +282,9 @@ func (m Model) renderView() string {
 				m.styles.Muted.Render(fmt.Sprintf("詳細: %v", m.err)),
 		)
 		s += errorBox + "\n"
+		s += "\n" + m.styles.Muted.Render("  ") +
+			m.styles.Accent.Render("Esc") + m.styles.Muted.Render(":エラークリア │ ") +
+			m.styles.Accent.Render("q") + m.styles.Muted.Render(":終了")
 		return s
 	}
 
@@ -380,4 +403,15 @@ func (m Model) shortenPath(path string) string {
 		return path[:15] + "..." + path[len(path)-20:]
 	}
 	return path
+}
+
+// パスを正規化（detector.goと同じロジック）
+func (m Model) normalizePath(path string) string {
+	// バックスラッシュをスラッシュに統一
+	normalized := strings.ReplaceAll(path, "\\", "/")
+	// 小文字に統一（Windowsは大文字小文字を区別しない）
+	normalized = strings.ToLower(normalized)
+	// 末尾のスラッシュを削除
+	normalized = strings.TrimSuffix(normalized, "/")
+	return normalized
 }
