@@ -3,96 +3,211 @@ package ui
 import "github.com/charmbracelet/lipgloss"
 
 type Styles struct {
-	Title      lipgloss.Style
-	Header     lipgloss.Style
-	Selected   lipgloss.Style
-	Normal     lipgloss.Style
-	Current    lipgloss.Style
-	Error      lipgloss.Style
+	// タイトル・ヘッダー
+	Title          lipgloss.Style
+	TitleGradient  lipgloss.Style
+	Subtitle       lipgloss.Style
+	Header         lipgloss.Style
 
-	// 新しいスタイル
-	Box        lipgloss.Style
-	Card       lipgloss.Style
-	Badge      lipgloss.Style
-	BadgeAlt   lipgloss.Style  // 代替バッジスタイル
-	Accent     lipgloss.Style
-	Muted      lipgloss.Style
-	Border     lipgloss.Style
+	// リストアイテム
+	Selected       lipgloss.Style
+	Normal         lipgloss.Style
+	Hover          lipgloss.Style
+
+	// ステータス
+	Current        lipgloss.Style
+	ActiveBadge    lipgloss.Style
+	Error          lipgloss.Style
+	Success        lipgloss.Style
+	Warning        lipgloss.Style
+
+	// コンテナ
+	Box            lipgloss.Style
+	Card           lipgloss.Style
+	CardHeader     lipgloss.Style
+	Panel          lipgloss.Style
+
+	// バッジ・アクセント
+	Badge          lipgloss.Style
+	BadgeAlt       lipgloss.Style
+	Accent         lipgloss.Style
+	Muted          lipgloss.Style
+
+	// ボーダー・装飾
+	Border         lipgloss.Style
+	Divider        lipgloss.Style
+	FooterBar      lipgloss.Style
+
+	// プログレスバー
+	ProgressBar    lipgloss.Style
+	ProgressFill   lipgloss.Style
 }
 
 func NewStyles() Styles {
-	// カラーパレット
-	primaryBlue := lipgloss.Color("#00D7FF")
-	successGreen := lipgloss.Color("#00D700")
-	warningOrange := lipgloss.Color("#FF8C00")
-	errorRed := lipgloss.Color("#FF5555")
-	neutralGray := lipgloss.Color("#8A8A8A")
-	darkGray := lipgloss.Color("#404040")
-	lightGray := lipgloss.Color("#D3D3D3")
+	// 🎨 モダンカラーパレット
+	primary := lipgloss.Color("#7C3AED")      // 紫（プライマリ）
+	secondary := lipgloss.Color("#06B6D4")    // シアン（セカンダリ）
+	success := lipgloss.Color("#10B981")      // エメラルドグリーン
+	warning := lipgloss.Color("#F59E0B")      // アンバー
+	danger := lipgloss.Color("#EF4444")       // レッド
 
+	// グレースケール
+	white := lipgloss.Color("#FFFFFF")
+	lightGray := lipgloss.Color("#E5E7EB")
+	gray := lipgloss.Color("#9CA3AF")
+	darkGray := lipgloss.Color("#374151")
+	darkerGray := lipgloss.Color("#1F2937")
+
+	// アクセントカラー
+	pink := lipgloss.Color("#EC4899")
+	yellow := lipgloss.Color("#FBBF24")
 
 	return Styles{
+		// タイトル系
 		Title: lipgloss.NewStyle().
-			Foreground(primaryBlue).
+			Foreground(primary).
 			Bold(true).
-			Padding(1, 2),
+			Padding(0, 2).
+			MarginTop(1).
+			MarginBottom(1),
+
+		TitleGradient: lipgloss.NewStyle().
+			Foreground(primary).
+			Background(darkerGray).
+			Bold(true).
+			Padding(1, 3).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(primary),
+
+		Subtitle: lipgloss.NewStyle().
+			Foreground(secondary).
+			Italic(true).
+			Padding(0, 2),
 
 		Header: lipgloss.NewStyle().
 			Foreground(lightGray).
 			Bold(true).
-			Padding(0, 2),
+			Padding(0, 1).
+			MarginTop(1),
 
+		// リストアイテム
 		Selected: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(primaryBlue).
+			Foreground(white).
+			Background(primary).
 			Bold(true).
 			Padding(0, 2).
-			Margin(0, 1),
+			MarginLeft(1).
+			MarginRight(1),
 
 		Normal: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Padding(0, 2),
+			Foreground(lightGray).
+			Padding(0, 2).
+			MarginLeft(1),
 
+		Hover: lipgloss.NewStyle().
+			Foreground(white).
+			Background(darkGray).
+			Padding(0, 2).
+			MarginLeft(1),
+
+		// ステータス
 		Current: lipgloss.NewStyle().
-			Foreground(successGreen).
+			Foreground(success).
 			Bold(true),
+
+		ActiveBadge: lipgloss.NewStyle().
+			Foreground(darkerGray).
+			Background(success).
+			Bold(true).
+			Padding(0, 1).
+			MarginLeft(1),
 
 		Error: lipgloss.NewStyle().
-			Foreground(errorRed).
+			Foreground(danger).
 			Bold(true),
 
-		// 新しいスタイル
+		Success: lipgloss.NewStyle().
+			Foreground(success).
+			Bold(true),
+
+		Warning: lipgloss.NewStyle().
+			Foreground(warning).
+			Bold(true),
+
+		// コンテナ
 		Box: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(neutralGray).
-			Padding(1, 2).
-			Margin(1, 0),
+			BorderForeground(gray).
+			Padding(0, 1).
+			MarginTop(0).
+			MarginBottom(0),
 
 		Card: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(primaryBlue).
+			BorderForeground(primary).
 			Padding(1, 2).
-			Margin(0, 1).
-			Background(darkGray),
+			MarginTop(1).
+			Background(darkerGray),
 
+		CardHeader: lipgloss.NewStyle().
+			Foreground(primary).
+			Bold(true).
+			Padding(0, 1).
+			BorderStyle(lipgloss.Border{Bottom: "─"}).
+			BorderForeground(primary).
+			BorderBottom(true).
+			MarginBottom(1),
+
+		Panel: lipgloss.NewStyle().
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(darkGray).
+			Padding(1, 2),
+
+		// バッジ
 		Badge: lipgloss.NewStyle().
-			Foreground(successGreen).
+			Foreground(success).
 			Bold(true),
 
 		BadgeAlt: lipgloss.NewStyle().
-			Foreground(successGreen).
-			Padding(0, 1).
+			Foreground(yellow).
+			Background(darkerGray).
 			Bold(true).
-			Italic(true),
+			Padding(0, 1),
 
 		Accent: lipgloss.NewStyle().
-			Foreground(warningOrange).
+			Foreground(pink).
 			Bold(true),
 
 		Muted: lipgloss.NewStyle().
-			Foreground(neutralGray),
+			Foreground(gray).
+			Italic(true),
 
+		// ボーダー・装飾
 		Border: lipgloss.NewStyle().
-			Foreground(neutralGray),
+			Foreground(gray),
+
+		Divider: lipgloss.NewStyle().
+			Foreground(darkGray).
+			Border(lipgloss.Border{Top: "─"}).
+			BorderTop(true).
+			MarginTop(1).
+			MarginBottom(1),
+
+		FooterBar: lipgloss.NewStyle().
+			Foreground(lightGray).
+			Background(darkerGray).
+			Padding(1, 2).
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(primary).
+			BorderTop(true),
+
+		// プログレスバー
+		ProgressBar: lipgloss.NewStyle().
+			Foreground(gray).
+			Background(darkGray),
+
+		ProgressFill: lipgloss.NewStyle().
+			Foreground(white).
+			Background(primary),
 	}
 }

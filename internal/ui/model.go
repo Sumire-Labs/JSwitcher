@@ -25,12 +25,9 @@ type Model struct {
 	styles           Styles
 
 	// UX improvements
-	showPreview bool
 	filterText  string
 	filterMode  bool
 	history     []string
-	compactMode bool
-	showCredits bool
 
 	// Loading animation
 	spinner spinner.Model
@@ -64,12 +61,9 @@ func NewModel() Model {
 		detector:         java.NewDetector(),
 		switcher:         java.NewSwitcher(),
 		styles:           NewStyles(),
-		showPreview:      true,
 		filterMode:       false,
 		filterText:       "",
 		history:          []string{},
-		compactMode:      true,  // デフォルトでコンパクトモード
-		showCredits:      false, // デフォルトでクレジット非表示
 		spinner:          s,
 	}
 }
@@ -214,15 +208,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// フィルターモードに切り替え
 			m.filterMode = true
 			m.filterText = ""
-		case "p", "P":
-			// プレビュー表示切り替え
-			m.showPreview = !m.showPreview
-		case "c", "C":
-			// コンパクトモード切り替え
-			m.compactMode = !m.compactMode
-		case "i", "I":
-			// クレジット情報表示切り替え
-			m.showCredits = !m.showCredits
 		}
 
 	// Mouse events disabled to prevent interference with CMD scrolling
@@ -256,159 +241,133 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	if m.compactMode {
-		return m.renderCompactView()
-	}
-	return m.renderDetailedView()
+	return m.renderView()
 }
 
-// コンパクトモード表示
-func (m Model) renderCompactView() string {
+// メイン表示
+func (m Model) renderView() string {
 	var s string
 
-	// ヘッダー
-	header := fmt.Sprintf("🔄 JavaSwitcher v0.2.6")
+	// ✨ ヘッダー（角丸枠）
+	headerText := "  🚀 JavaSwitcher v0.2.6  "
 	if m.loading {
-		header += " " + m.styles.Muted.Render("(検出中...)")
+		headerText += m.styles.Muted.Render("(検出中...)")
 	}
-	s += m.styles.Title.Render(header) + "\n"
+	s += m.styles.TitleGradient.Render(headerText) + "\n"
 
 	// エラー表示
 	if m.err != nil {
-		s += m.styles.Error.Render(fmt.Sprintf("❌ エラー: %v", m.err)) + "\n"
+		errorBox := m.styles.Card.Render(
+			m.styles.Error.Render("❌ エラー") + "\n" +
+				m.styles.Muted.Render(fmt.Sprintf("詳細: %v", m.err)),
+		)
+		s += errorBox + "\n"
 		return s
 	}
 
-	// 現在のJava表示
-	currentJava := m.getCurrentJava()
-	if currentJava != nil {
-		currentCard := m.styles.Box.Render(
-			m.styles.Current.Render("📍 現在アクティブ") + "\n" +
-				fmt.Sprintf("🏷️  %s", currentJava.Version) + "\n" +
-				m.styles.Muted.Render(fmt.Sprintf("📁 %s", currentJava.Home)),
-		)
-		s += currentCard + "\n"
-	}
-
-	// フィルター状況
+	// 🔍 フィルター状況
 	if m.filterMode {
 		filterBox := m.styles.Card.Render(
-			m.styles.Accent.Render("🔍 フィルター: ") +
-				m.styles.Selected.Render(m.filterText+"█") +
-				m.styles.Muted.Render(" (Escでキャンセル)"),
+			m.styles.Accent.Render("🔍 検索モード") + "\n" +
+				m.styles.Selected.Render("┃ "+m.filterText+"█") + "\n" +
+				m.styles.Muted.Render("┃ Escでキャンセル"),
 		)
 		s += filterBox + "\n"
 	} else if m.filterText != "" {
 		filterBox := m.styles.Box.Render(
-			m.styles.Accent.Render("🔍 フィルター: ") +
-				m.filterText +
-				m.styles.Muted.Render(fmt.Sprintf(" (%d件)", len(m.filteredInstalls))),
+			m.styles.Accent.Render("🔍 フィルター適用中: ") +
+				m.styles.Badge.Render(m.filterText) +
+				m.styles.Muted.Render(fmt.Sprintf(" (%d件表示)", len(m.filteredInstalls))),
 		)
 		s += filterBox + "\n"
 	}
 
 	// Java一覧
 	if m.loading {
-		s += m.spinner.View() + " " + m.styles.Muted.Render("Javaインストールを検出中...") + "\n"
+		loadingBox := m.styles.Card.Render(
+			m.spinner.View() + " " + m.styles.Muted.Render("Javaインストールを検出中..."),
+		)
+		s += loadingBox + "\n"
 		return s
 	}
 
 	if len(m.javaInstalls) == 0 {
-		s += m.styles.Error.Render("❌ Javaインストールが見つかりません") + "\n"
+		emptyBox := m.styles.Card.Render(
+			m.styles.Error.Render("❌ Javaインストールが見つかりません") + "\n" +
+				m.styles.Muted.Render("システム内にJavaがインストールされていない可能性があります"),
+		)
+		s += emptyBox + "\n"
 		return s
 	}
 
-	// 選択可能なJava一覧
+	// 📋 選択可能なJava一覧
 	activeList := m.javaInstalls
 	if m.filterText != "" {
 		activeList = m.filteredInstalls
 	}
 
 	if len(activeList) == 0 && m.filterText != "" {
-		s += m.styles.Error.Render("❌ フィルターに一致するJavaが見つかりません") + "\n"
+		noResultBox := m.styles.Card.Render(
+			m.styles.Warning.Render("⚠️  フィルターに一致するJavaが見つかりません") + "\n" +
+				m.styles.Muted.Render("別のキーワードで検索してください"),
+		)
+		s += noResultBox + "\n"
 	} else {
-		listHeader := "🔄 利用可能なJava:"
+		listHeader := "📋 利用可能なJava"
 		if len(activeList) != len(m.javaInstalls) {
-			listHeader += fmt.Sprintf(" (%d/%d)", len(activeList), len(m.javaInstalls))
+			listHeader += fmt.Sprintf(" (%d/%d件)", len(activeList), len(m.javaInstalls))
 		}
-		s += m.styles.Header.Render(listHeader) + "\n"
+		s += m.styles.CardHeader.Render(listHeader) + "\n"
 
 		for i, install := range activeList {
-			cursor := " "
+			// カーソルアイコン
+			cursor := "  "
 			if m.cursor == i {
-				cursor = "▶"
+				cursor = "▶ "
 			}
 
-			// バージョンにバッジを追加
+			// バージョン表示
 			version := install.Version
+			badgeStr := ""
 			if install.Current {
-				version += " " + m.styles.Badge.Render("[ACTIVE]")
+				badgeStr = m.styles.ActiveBadge.Render("ACTIVE")
 			}
 
-			line := fmt.Sprintf("%s %s", cursor, version)
+			line := cursor + version
+			if badgeStr != "" {
+				line += " " + badgeStr
+			}
+
+			// パス表示
 			shortPath := m.shortenPath(install.Home)
-			line += m.styles.Muted.Render(fmt.Sprintf(" 📁 %s", shortPath))
+			pathLine := "\n   " + m.styles.Muted.Render("📁 "+shortPath)
+
+			fullLine := line + pathLine
 
 			if m.cursor == i {
-				s += m.styles.Selected.Render(line) + "\n"
+				s += m.styles.Selected.Render(fullLine) + "\n"
 			} else {
-				s += m.styles.Normal.Render(line) + "\n"
+				s += m.styles.Normal.Render(fullLine) + "\n"
 			}
 		}
 	}
 
-	// プレビュー（コンパクト版）
-	if m.showPreview && len(activeList) > 0 && m.cursor < len(activeList) {
-		selected := activeList[m.cursor]
-		preview := fmt.Sprintf("🔍 %s | 📁 %s", selected.Version, m.shortenPath(selected.Home))
-		s += "\n" + m.styles.Box.Render(preview) + "\n"
-	}
-
-	// コントロール
+	// 💡 操作ガイド（シンプル表示）
 	s += "\n"
 	if m.filterMode {
-		s += m.styles.Border.Render("💡 文字入力でフィルター | Enter:確定 | Esc:キャンセル")
+		s += m.styles.Muted.Render("  文字入力でフィルター │ ") +
+			m.styles.Accent.Render("Enter") + m.styles.Muted.Render(":確定 │ ") +
+			m.styles.Accent.Render("Esc") + m.styles.Muted.Render(":キャンセル")
 	} else {
-		s += m.styles.Border.Render("💡 ↑↓:移動 | Enter:選択 | /:検索 | c:詳細 | i:情報 | q:終了")
+		s += m.styles.Muted.Render("  ") +
+			m.styles.Accent.Render("↑↓") + m.styles.Muted.Render(":移動 │ ") +
+			m.styles.Accent.Render("Enter") + m.styles.Muted.Render(":選択 │ ") +
+			m.styles.Accent.Render("/") + m.styles.Muted.Render(":検索 │ ") +
+			m.styles.Accent.Render("r") + m.styles.Muted.Render(":復元 │ ") +
+			m.styles.Accent.Render("q") + m.styles.Muted.Render(":終了")
 	}
 
 	return s
-}
-
-// 詳細モード表示（従来版ベース）
-func (m Model) renderDetailedView() string {
-	var s string
-
-	// タイトル
-	s += m.styles.Title.Render("🔄 JavaSwitcher v0.2.4") + "\n"
-	s += m.styles.Header.Render("高速Java環境切り替えツール") + "\n"
-
-	// クレジット情報（iキーで切り替え）
-	if m.showCredits {
-		creditBox := m.styles.Box.Render(
-			"📦 バージョン: v0.2.5\n" +
-				"🎯 作者: s12kuma01\n" +
-				"📚 ライセンス: OSL-3.0\n" +
-				"🌐 GitHub: https://github.com/Sumire-Labs/JSwitcher",
-		)
-		s += creditBox + "\n"
-	}
-
-	// エラー・ローディング
-	if m.err != nil {
-		s += m.styles.Error.Render(fmt.Sprintf("❌ エラー: %v", m.err)) + "\n"
-		return s
-	}
-
-	if m.loading {
-		s += m.spinner.View() + " " + m.styles.Muted.Render("Javaインストールを検出中...") + "\n"
-		return s
-	}
-
-	// 残りの詳細表示ロジック
-	// （省略して後で実装）
-
-	return s + m.styles.Border.Render("💡 c:コンパクト | その他の操作...")
 }
 
 // パスを短縮する
