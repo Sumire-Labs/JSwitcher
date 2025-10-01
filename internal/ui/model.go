@@ -25,9 +25,9 @@ type Model struct {
 	styles           Styles
 
 	// UX improvements
-	filterText  string
-	filterMode  bool
-	history     []string
+	filterText string
+	filterMode bool
+	history    []string
 
 	// Loading animation
 	spinner spinner.Model
@@ -269,7 +269,7 @@ func (m Model) renderView() string {
 	var s string
 
 	// ✨ ヘッダー（角丸枠）
-	headerText := "  🚀 JavaSwitcher v0.2.6  "
+	headerText := "  🚀 JavaSwitcher v0.3.0  "
 	if m.loading {
 		headerText += m.styles.Muted.Render("(検出中...)")
 	}
