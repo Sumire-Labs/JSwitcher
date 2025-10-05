@@ -269,7 +269,7 @@ func (m Model) renderView() string {
 	var s string
 
 	// ✨ ヘッダー（角丸枠）
-	headerText := "  🚀 JavaSwitcher v0.3.0  "
+	headerText := "  🚀 JavaSwitcher v0.3.1  "
 	if m.loading {
 		headerText += m.styles.Muted.Render("(検出中...)")
 	}
