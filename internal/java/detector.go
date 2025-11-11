@@ -1,3 +1,13 @@
+/*
+ * JSwitcher
+ *
+ * Copyright 2025 s12kuma01
+ *
+ * This software is licensed under the Open Software License version
+ * 3.0. The full text of this license can be found in https://opensource.org/licenses/OSL-3.0
+ * or in the LICENSES directory which is distributed along with the software.
+ */
+
 package java
 
 import (
@@ -18,9 +28,9 @@ type Installation struct {
 }
 
 type Detector struct {
-	searchPaths  []string
-	javaExeName  string
-	currentHome  string
+	searchPaths []string
+	javaExeName string
+	currentHome string
 }
 
 func NewDetector() *Detector {
@@ -428,7 +438,7 @@ func (d *Detector) detectFromChocolatey() []Installation {
 
 	for _, entry := range entries {
 		if entry.IsDir() && (strings.Contains(strings.ToLower(entry.Name()), "openjdk") ||
-							  strings.Contains(strings.ToLower(entry.Name()), "adoptopenjdk")) {
+			strings.Contains(strings.ToLower(entry.Name()), "adoptopenjdk")) {
 			javaHome := filepath.Join(chocoPath, entry.Name(), "tools")
 			if d.isValidJavaHome(javaHome) {
 				version := d.getJavaVersion(javaHome)
@@ -467,7 +477,7 @@ func (d *Detector) detectFromScoop() []Installation {
 
 	for _, entry := range entries {
 		if entry.IsDir() && (strings.Contains(strings.ToLower(entry.Name()), "openjdk") ||
-							  strings.Contains(strings.ToLower(entry.Name()), "adoptopenjdk")) {
+			strings.Contains(strings.ToLower(entry.Name()), "adoptopenjdk")) {
 			appPath := filepath.Join(scoopPath, entry.Name(), "current")
 			if d.isValidJavaHome(appPath) {
 				version := d.getJavaVersion(appPath)

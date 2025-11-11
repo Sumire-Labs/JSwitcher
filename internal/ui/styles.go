@@ -1,55 +1,65 @@
+/*
+ * JSwitcher
+ *
+ * Copyright 2025 s12kuma01
+ *
+ * This software is licensed under the Open Software License version
+ * 3.0. The full text of this license can be found in https://opensource.org/licenses/OSL-3.0
+ * or in the LICENSES directory which is distributed along with the software.
+ */
+
 package ui
 
 import "github.com/charmbracelet/lipgloss"
 
 type Styles struct {
 	// タイトル・ヘッダー
-	Title          lipgloss.Style
-	TitleGradient  lipgloss.Style
-	Subtitle       lipgloss.Style
-	Header         lipgloss.Style
+	Title         lipgloss.Style
+	TitleGradient lipgloss.Style
+	Subtitle      lipgloss.Style
+	Header        lipgloss.Style
 
 	// リストアイテム
-	Selected       lipgloss.Style
-	Normal         lipgloss.Style
-	Hover          lipgloss.Style
+	Selected lipgloss.Style
+	Normal   lipgloss.Style
+	Hover    lipgloss.Style
 
 	// ステータス
-	Current        lipgloss.Style
-	ActiveBadge    lipgloss.Style
-	Error          lipgloss.Style
-	Success        lipgloss.Style
-	Warning        lipgloss.Style
+	Current     lipgloss.Style
+	ActiveBadge lipgloss.Style
+	Error       lipgloss.Style
+	Success     lipgloss.Style
+	Warning     lipgloss.Style
 
 	// コンテナ
-	Box            lipgloss.Style
-	Card           lipgloss.Style
-	CardHeader     lipgloss.Style
-	Panel          lipgloss.Style
+	Box        lipgloss.Style
+	Card       lipgloss.Style
+	CardHeader lipgloss.Style
+	Panel      lipgloss.Style
 
 	// バッジ・アクセント
-	Badge          lipgloss.Style
-	BadgeAlt       lipgloss.Style
-	Accent         lipgloss.Style
-	Muted          lipgloss.Style
+	Badge    lipgloss.Style
+	BadgeAlt lipgloss.Style
+	Accent   lipgloss.Style
+	Muted    lipgloss.Style
 
 	// ボーダー・装飾
-	Border         lipgloss.Style
-	Divider        lipgloss.Style
-	FooterBar      lipgloss.Style
+	Border    lipgloss.Style
+	Divider   lipgloss.Style
+	FooterBar lipgloss.Style
 
 	// プログレスバー
-	ProgressBar    lipgloss.Style
-	ProgressFill   lipgloss.Style
+	ProgressBar  lipgloss.Style
+	ProgressFill lipgloss.Style
 }
 
 func NewStyles() Styles {
 	// 🎨 モダンカラーパレット
-	primary := lipgloss.Color("#7C3AED")      // 紫（プライマリ）
-	secondary := lipgloss.Color("#06B6D4")    // シアン（セカンダリ）
-	success := lipgloss.Color("#10B981")      // エメラルドグリーン
-	warning := lipgloss.Color("#F59E0B")      // アンバー
-	danger := lipgloss.Color("#EF4444")       // レッド
+	primary := lipgloss.Color("#7C3AED")   // 紫（プライマリ）
+	secondary := lipgloss.Color("#06B6D4") // シアン（セカンダリ）
+	success := lipgloss.Color("#10B981")   // エメラルドグリーン
+	warning := lipgloss.Color("#F59E0B")   // アンバー
+	danger := lipgloss.Color("#EF4444")    // レッド
 
 	// グレースケール
 	white := lipgloss.Color("#FFFFFF")
